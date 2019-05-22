@@ -1,7 +1,14 @@
-import 'dart:async';
+import 'dart:io';
+import 'dart:math';
 
+import 'package:drizl/views/map_sample.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'components/sun_ui.dart';
+import 'config/config.dart';
+import 'generic_widgets/radial_position.dart';
+import 'stack/sky_background.dart';
 
 void main() => runApp(MyApp());
 
@@ -10,83 +17,99 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Google Maps Demo',
-      home: MapSample(),
+      home: Skeleton(),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.light,
-        primaryColor: Colors.teal[100],
+        primaryColor: Colors.blueGrey[900],
         accentColor: Colors.indigo[300],
       ),
     );
   }
 }
 
-class MapSample extends StatefulWidget {
+class SineTween extends Tween<double> {
+  SineTween({double begin, double end}) : super(begin: begin, end: end);
+
   @override
-  State<MapSample> createState() => MapSampleState();
+  double lerp(double t) {
+    return super.lerp((sin((t) * 2 * pi) + 1) / 2);
+  }
 }
 
-class MapSampleState extends State<MapSample> {
-  Completer<GoogleMapController> _controller = Completer();
+class CosTween extends Tween<double> {
+  CosTween({double begin, double end}) : super(begin: begin, end: end);
 
-  static final CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14.4746,
-  );
+  @override
+  double lerp(double t) {
+    return super.lerp((cos((t) * 2 * pi) + 1) / 2);
+  }
+}
 
-  static final CameraPosition _kHome = CameraPosition(
-    target: LatLng(48.2883, -122.6484),
-    zoom: 12.0,
-  );
+class Skeleton extends StatefulWidget {
+  @override
+  State<Skeleton> createState() => SkeletonState();
+}
 
-  static final CameraPosition _kLake = CameraPosition(
-      bearing: 192.8334901395799,
-      target: LatLng(37.43296265331129, -122.08832357078792),
-      tilt: 59.440717697143555,
-      zoom: 19.151926040649414);
+class SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  final Config _config = Config();
+
+  Animation animation_y;
+  Animation animation_x;
+  AnimationController animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    animationController = AnimationController(
+      duration: Duration(milliseconds: 5000),
+      vsync: this,
+    );
+
+    animation_y = Tween(begin: 0.0, end: 2.0 * pi).animate(animationController)
+      ..addListener(() {
+        setState(() {});
+      });
+
+    animation_x = SineTween(begin: 2.5, end: -2.5).animate(animationController)
+      ..addListener(() {
+        setState(() {});
+      });
+
+    animationController.repeat();
+  }
+
+  @override
+  void dispose() {
+    animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
+    return Scaffold(
       body: Stack(
+        overflow: Overflow.clip,
         children: <Widget>[
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: _kGooglePlex,
-            onMapCreated: (GoogleMapController controller) {
-              _controller.complete(controller);
-            },
-          ),
-          Align(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                RaisedButton(
-                  child: Text("To the lake!"),
-                  onPressed: _goToTheLake,
-                  color: Theme.of(context).accentColor,
-                ),
-                RaisedButton(
-                  child: Text("To the House!"),
-                  onPressed: _goToMyHouse,
-                  color: Theme.of(context).accentColor,
-                ),
-              ],
+          SkyBackground(),
+          Container(
+            alignment: Alignment(0.0, 1.0),
+            child: RadialPosition(
+              child: SunUI(),
+              radius: 140.0,
+              angle: animation_y.value,
             ),
-            alignment: Alignment(-0.9, 0.95),
+          ),
+          Container(
+            alignment: Alignment(0.0, 1.0),
+            child: Container(
+              color: Colors.green,
+              height: 50.0,
+            ),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _goToMyHouse() async {
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(_kHome));
-  }
-
-  Future<void> _goToTheLake() async {
-    final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
   }
 }
