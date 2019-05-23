@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:drizl/calculations/sun_calc.dart';
 import 'package:drizl/views/map_sample.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -67,10 +68,22 @@ class SkeletonState extends State<Skeleton>
       vsync: this,
     );
 
-    animation_y = Tween(begin: 0.0, end: 2.0 * pi).animate(animationController)
-      ..addListener(() {
-        setState(() {});
-      });
+    SunCalc sunCalc = SunCalc.now(latitude: 35.6762, longitude: 139.6503);
+
+    // this is the position of the sun in the sky in
+    // percentange of it's path from sunrise to sunset
+    double timeOfDayRatio = (sunCalc.julianTime - sunCalc.sunRise) /
+        (sunCalc.sunSet - sunCalc.sunRise);
+
+    // use this to calculate angle between 0 and pi (this is the circular position of the sun)
+    // the duration is set by current position (begin) and sunset (end) * the percent of sky left to go
+    // e.g. there is 4 hours until sunset, and the sun is halfway in the sky, the duration should be 4 hours
+
+    animation_y = Tween(begin: pi - (pi * timeOfDayRatio), end: 2.0 * pi)
+        .animate(animationController)
+          ..addListener(() {
+            setState(() {});
+          });
 
     animation_x = SineTween(begin: 2.5, end: -2.5).animate(animationController)
       ..addListener(() {
@@ -96,7 +109,9 @@ class SkeletonState extends State<Skeleton>
           Container(
             alignment: Alignment(0.0, 1.0),
             child: RadialPosition(
-              child: SunUI(),
+              child: Transform(
+                  transform: Matrix4.translationValues(0.0, 10.0, 0.0),
+                  child: SunUI()),
               radius: 140.0,
               angle: animation_y.value,
             ),
