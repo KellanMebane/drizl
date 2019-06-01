@@ -59,36 +59,36 @@ class SkeletonState extends State<Skeleton>
   Animation animation_y;
   Animation animation_x;
   AnimationController animationController;
+  double startPosition = 0.0;
+  double sunAngleRelative = 0.0;
+  double long = -122;
+  double lat = 47;
 
   @override
   void initState() {
     super.initState();
+    SunCalc sunCalc = SunCalc(latitude: lat, longitude: long);
+
+    double sunAngle = 90 - (lat - (sunCalc.declinationOfTheSun * 57.2958));
+
+    sunAngleRelative = (sunAngle > 90) ? 180 - sunAngle : sunAngle;
+
+    print("Sun angle: ${sunAngleRelative}");
+
     animationController = AnimationController(
       duration: Duration(milliseconds: 5000),
       vsync: this,
     );
 
-    SunCalc sunCalc = SunCalc.now(latitude: 35.6762, longitude: 139.6503);
-
-    // this is the position of the sun in the sky in
-    // percentange of it's path from sunrise to sunset
-    double timeOfDayRatio = (sunCalc.julianTime - sunCalc.sunRise) /
-        (sunCalc.sunSet - sunCalc.sunRise);
-
-    // use this to calculate angle between 0 and pi (this is the circular position of the sun)
-    // the duration is set by current position (begin) and sunset (end) * the percent of sky left to go
-    // e.g. there is 4 hours until sunset, and the sun is halfway in the sky, the duration should be 4 hours
-
-    animation_y = Tween(begin: pi - (pi * timeOfDayRatio), end: 2.0 * pi)
-        .animate(animationController)
-          ..addListener(() {
-            setState(() {});
-          });
-
-    animation_x = SineTween(begin: 2.5, end: -2.5).animate(animationController)
+    animation_y = Tween(begin: 0.0, end: 2 * pi).animate(animationController)
       ..addListener(() {
         setState(() {});
       });
+
+    // animation_x = SineTween(begin: 2.5, end: -2.5).animate(animationController)
+    //   ..addListener(() {
+    //     setState(() {});
+    //   });
 
     animationController.repeat();
   }
@@ -107,10 +107,24 @@ class SkeletonState extends State<Skeleton>
         children: <Widget>[
           SkyBackground(),
           Container(
-            alignment: Alignment(0.0, 1.0),
+            alignment: Alignment(0.0, 0.0),
+            child: Container(
+              width: 280.0,
+              height: 280.0,
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Container(
+            alignment: Alignment(0.0, 0.0),
             child: RadialPosition(
               child: Transform(
-                  transform: Matrix4.translationValues(0.0, 10.0, 0.0),
+                  transform: Matrix4.translationValues(
+                      // don't forget: here
+                      // trying to make it spin regular when sun angle is 90, make it scrape middle when angle is 0
+                      0.0, 0.0 + (140 * (sunAngleRelative / 90)), 0.0),
                   child: SunUI()),
               radius: 140.0,
               angle: animation_y.value,

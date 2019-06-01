@@ -20,7 +20,6 @@ class RadialPosition extends StatelessWidget {
 
     return Transform(
       transform: Matrix4.translationValues(x, y, 0.0),
-      origin: Offset(60.0, 60.0),
       child: child,
     );
   }
