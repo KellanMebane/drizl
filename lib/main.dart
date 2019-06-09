@@ -63,20 +63,21 @@ class SkeletonState extends State<Skeleton>
   double sunAngleRelative = 0.0;
   double long = -122;
   double lat = 47;
+  double dayPercent = 0.0;
 
   @override
   void initState() {
     super.initState();
     SunCalc sunCalc = SunCalc(latitude: lat, longitude: long);
 
-    double sunAngle = 90 - (lat - (sunCalc.declinationOfTheSun * 57.2958));
+    double sunAngle = 90 - ((sunCalc.declinationOfTheSun * 57.2958) - lat);
 
-    sunAngleRelative = (sunAngle > 90) ? 180 - sunAngle : sunAngle;
-
-    print("Sun angle: ${sunAngleRelative}");
+    sunAngleRelative = sunAngle;
+    dayPercent = (sunCalc.meanSolarNoon - sunCalc.preciseDaysSince2000).abs();
+    print("Day percent: ${dayPercent}");
 
     animationController = AnimationController(
-      duration: Duration(milliseconds: 5000),
+      duration: Duration(seconds: 86400),
       vsync: this,
     );
 
@@ -107,34 +108,36 @@ class SkeletonState extends State<Skeleton>
         children: <Widget>[
           SkyBackground(),
           Container(
-            alignment: Alignment(0.0, 0.0),
-            child: Container(
-              width: 280.0,
-              height: 280.0,
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+            alignment: Alignment(0.0, 1.0),
+            child: Transform(
+              transform: Matrix4.translationValues(0.0, 90.0, 0.0),
+              child: Container(
+                width: 280.0,
+                height: 280.0,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
           ),
           Container(
-            alignment: Alignment(0.0, 0.0),
+            alignment: Alignment(0.0, 1.0),
             child: RadialPosition(
               child: Transform(
-                  transform: Matrix4.translationValues(
-                      // don't forget: here
-                      // trying to make it spin regular when sun angle is 90, make it scrape middle when angle is 0
-                      0.0, 0.0 + (140 * (sunAngleRelative / 90)), 0.0),
-                  child: SunUI()),
+                transform: Matrix4.translationValues(0.0,
+                    10.0 + (140.0 * (1.0 - (sunAngleRelative / 90.0))), 0.0),
+                child: SunUI(),
+              ),
               radius: 140.0,
-              angle: animation_y.value,
+              angle: animation_y.value + (2 * pi * (dayPercent - 0.25)),
             ),
           ),
           Container(
             alignment: Alignment(0.0, 1.0),
             child: Container(
-              color: Colors.green,
-              height: 50.0,
+              color: Colors.white30,
+              height: 67.5,
             ),
           ),
         ],

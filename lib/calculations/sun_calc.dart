@@ -17,6 +17,7 @@ class SunCalc {
   double solarTransit;
   double declinationOfTheSun;
   double hourAngle;
+  double preciseDaysSince2000;
 
   SunCalc({this.latitude, this.longitude}) {
     double radConvert = 0.0174532925;
@@ -26,6 +27,7 @@ class SunCalc {
     julianDay = julianTime.floor();
 
     numberDaysSince2000 = julianDay - 2451545.0 + 0.0008;
+    preciseDaysSince2000 = julianTime - 2451545.0 + 0.0008;
 
     meanSolarNoon = numberDaysSince2000 - longitude / 360.0;
 
